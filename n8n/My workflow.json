@@ -1,0 +1,221 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "home/sensors",
+        "options": {
+          "jsonParseBody": true
+        }
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -80
+      ],
+      "id": "e0aa5661-5e78-4a4a-9734-86bcdb7005b8",
+      "name": "MQTT Trigger",
+      "credentials": {
+        "mqtt": {
+          "id": "6I1TDsQkv5Reh7lE",
+          "name": "MQTT account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "72200045-136a-46db-99de-a6d37e5cd33f",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString().slice(0,19).replace('T',' ') }}",
+              "type": "string"
+            },
+            {
+              "id": "69f8f546-b636-4828-b151-e8da2d57ccd0",
+              "name": "=pir",
+              "value": "={{ $json.message.pir }}",
+              "type": "number"
+            },
+            {
+              "id": "8b79840b-a6d0-4c77-abc6-d00c3e81bc99",
+              "name": "=soil_value",
+              "value": "={{ $json.message.soil }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        -96
+      ],
+      "id": "92c8993c-39e9-4f9c-8972-accd679954fa",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "value": "sensors",
+          "mode": "name"
+        },
+        "dataMode": "defineBelow",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "timestamp",
+              "value": "={{$json.timestamp}}"
+            },
+            {
+              "column": "pir",
+              "value": "={{$json.pir}}"
+            },
+            {
+              "column": "soil_value",
+              "value": "={{$json.soil_value}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        176,
+        -96
+      ],
+      "id": "cf251ae7-174b-4d36-8ea7-773fcfe8938d",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "mySql": {
+          "id": "ZoaOSkZNcMxTaBGp",
+          "name": "MySQL account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5448627779",
+        "text": "=🚨 Smart IoT Alert\n\n🌱 Soil: {{ $json.message.soil }}\n👤 Motion: {{ $json.message.pir }}\n\n\nStatus:\n{{ $json.message.soil > 3500 ? \"Soil is DRY 🚱\" : \"Soil OK 💧\" }}\n{{ $json.message.pir == 1 ? \"Motion DETECTED 🚶\" : \"No Motion 🟢\" }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        -288
+      ],
+      "id": "6e3a3684-db46-472d-ab23-fa6d6ed2824b",
+      "name": "Send a text message",
+      "webhookId": "a32c195f-6823-46f0-b279-ba678e9f9c68",
+      "credentials": {
+        "telegramApi": {
+          "id": "S5u48Fv9OkPv3rHp",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7a9326da-b116-4505-8cb5-8cea213d0747",
+              "leftValue": "={{ $json.message.soil }}",
+              "rightValue": 3500,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "b136f7dd-53b4-45c6-b0b1-b97f2f2d69d8",
+              "leftValue": "={{ $json.message.pir }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -112,
+        -240
+      ],
+      "id": "c86b4774-5b7d-4aeb-b815-92a6bbdb2ada",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "MQTT Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "586c8a7e-9c90-4c75-8bf0-32c3cb42fccb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f60149a58932d4c30e466bc07e0f491cf50d6c2da38092d2c7a4f59637c9c65d"
+  },
+  "id": "hbmM-2evTPnDJvVEn9z_z",
+  "tags": []
+}
